@@ -1,0 +1,7 @@
+{
+    "window.title": "${dirty}yag${separator}${rootName}",
+    "editor.formatOnSave": true,
+    "cmake.configureArgs": [
+        "-DVIDEO_ENC=\"cpu\""
+    ]
+}

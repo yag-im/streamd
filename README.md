@@ -1,9 +1,5 @@
 # Build notes
 
-Must reside at:
-
-    /ara/devel/acme/yag/jukebox/runners/base/deps/streamd so jukeboxs' deps are available on the build stage
-
 Generate header file
 
     wayland-scanner client-header < /workspaces/jukebox/runners/base/deps/wlroots/protocol/virtual-keyboard-unstable-v1.xml > virtual-keyboard-unstable-v1-client-protocol.h
@@ -35,5 +31,7 @@ Env vars used at runtime
 ## Wayland navigation
 
 pipewire, screencast-portal: https://github.com/obsproject/obs-studio/tree/master/plugins/linux-pipewire
+
 pointer: https://github.com/swaywm/wlroots/blob/master/examples/virtual-pointer.c
+
 keyboard: https://github.com/any1/wayvnc

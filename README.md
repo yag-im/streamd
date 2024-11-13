@@ -1,4 +1,8 @@
-# Build notes
+# streamd
+
+`streamd` is a WebRTC streaming daemon that runs within each Jukebox container, supporting both X11 (ximagesrc) and Wayland (pipewiresrc) for frame capture. It offers frame encoding using CPU, iGPU (Intel HD), and GPU (Nvidia). The `streamd` component is baked into each [Jukebox](https://github.com/yag-im/jukebox) image.
+
+## Build notes
 
 Generate header file
 
@@ -26,9 +30,9 @@ Env vars used at runtime
     WS_CONN_ID
     WS_CONSUMER_ID    
 
-# Refs
+## Refs
 
-## Wayland navigation
+### Wayland navigation
 
 pipewire, screencast-portal: https://github.com/obsproject/obs-studio/tree/master/plugins/linux-pipewire
 

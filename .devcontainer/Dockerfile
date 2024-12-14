@@ -343,6 +343,8 @@ RUN apt-get update \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/* /var/cache/apt/*
 
+COPY --from=builder $BUILD_DIR /usr
+
 # create non-root user TODO: drop sudo
 # TODO: sync /run/user/$USER_UID with XDG_RUNTIME_DIR
 RUN groupadd --gid $USER_GID $USERNAME \
@@ -357,18 +359,19 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
 
-COPY --from=builder $BUILD_DIR /usr
-
-RUN mkdir -p /usr/share/xdg-desktop-portal-wlr
-COPY wayland/files/xdg-desktop-portal-wlr.conf /usr/share/xdg-desktop-portal-wlr/config
-
 RUN chown -R $USERNAME:$USERNAME /home/$USERNAME
 
-COPY deps/gstreamer/subprojects/packages/bin /bin
-COPY deps/gstreamer/subprojects/packages/include /include
-COPY deps/gstreamer/subprojects/packages/lib /lib
-COPY deps/gstreamer/subprojects/packages/share /share
-COPY deps/gstreamer/subprojects/packages/libexec /usr/libexec
+RUN mkdir -p /usr/share/xdg-desktop-portal-wlr
+# keep in sync with jukebox/runners/base/wayland/files/xdg-desktop-portal-wlr.conf
+COPY artifacts/runtime/conf/xdg-desktop-portal-wlr.conf /usr/share/xdg-desktop-portal-wlr/config
 
-RUN ln -s /usr/libexec /libexec
-RUN ldconfig
+# TODO: sync-up with gstreamer build in jukebox (follow jukebox/runners/base/files/build_gstreamer.sh)
+
+# COPY deps/gstreamer/subprojects/packages/bin /bin
+# COPY deps/gstreamer/subprojects/packages/include /include
+# COPY deps/gstreamer/subprojects/packages/lib /lib
+# COPY deps/gstreamer/subprojects/packages/share /share
+# COPY deps/gstreamer/subprojects/packages/libexec /usr/libexec
+
+# RUN ln -s /usr/libexec /libexec
+# RUN ldconfig

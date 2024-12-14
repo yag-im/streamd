@@ -1,13 +1,12 @@
 {
     "name": "yag-jukebox-streamd",
     "build": {
-        "dockerfile": "Dockerfile",
-        "context": "../../.." // to copy common deps inside the devcontainer
+        "dockerfile": "Dockerfile"
     },
     "runArgs": [
         "--name=yag-jukebox-streamd",
         "--network=host",
-        "--env-file=/ara/devel/acme/yag/jukebox/runners/base/deps/streamd/.devcontainer/artifacts/runtime/.env",
+        "--env-file=.devcontainer/artifacts/runtime/.env",
         "--device=/dev/dri/renderD128",
 		"--device=/dev/dri/card0",
 		"--device=/dev/snd/seq",

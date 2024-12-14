@@ -100,7 +100,7 @@ void gst_ximage_navigation_key(Display *display, const char *keysym_name, Bool i
     unsigned int keysym, keycode;
     keysym = (unsigned int)XStringToKeysym(keysym_name);
     keycode = XKeysymToKeycode(display, keysym);
-    log_debug("keyboard event: keycode=%s state=%s", keycode, is_press ? "pressed" : "released");
+    log_debug("keyboard event: keycode=%u state=%s", keycode, is_press ? "pressed" : "released");
     if (keycode == 0)  // undefined KeySym
         return;
     XTestFakeKeyEvent(display, keycode, is_press, CurrentTime);

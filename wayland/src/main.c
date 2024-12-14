@@ -14,15 +14,15 @@ struct StreamDCtx {
 static gboolean on_bus_message(GstBus *bus, GstMessage *message, GMainLoop *loop) {
     switch (GST_MESSAGE_TYPE(message)) {
         case GST_MESSAGE_EOS:
-            g_print("streamd: finished playback\n");
+            log_info("finished playback");
             g_main_loop_quit(loop);
             break;
         case GST_MESSAGE_ERROR:
             GError *err;
             gchar *debug_info;
             gst_message_parse_error(message, &err, &debug_info);
-            g_printerr("streamd: error received from element %s: %s\n", GST_OBJECT_NAME(message->src), err->message);
-            g_printerr("streamd: debugging information: %s\n", debug_info ? debug_info : "none");
+            log_error("error received from element %s: %s", GST_OBJECT_NAME(message->src), err->message);
+            log_error("debugging information: %s", debug_info ? debug_info : "none");
             g_error_free(err);
             g_free(debug_info);
             g_main_loop_quit(loop);
@@ -33,6 +33,7 @@ static gboolean on_bus_message(GstBus *bus, GstMessage *message, GMainLoop *loop
     }
     return TRUE;
 }
+
 gchar* compose_gstreamer_pipeline(int pipewire_fd) {
     gchar *pipeline_str = "\
         pipewiresrc fd=%u\
@@ -79,7 +80,7 @@ gchar* compose_gstreamer_pipeline(int pipewire_fd) {
 }
 
 void on_pipewire_stream_ready_cb(int pipewire_fd) {
-    g_print("streamd: on_pipewire_stream_ready_cb\n");
+    log_info("on_pipewire_stream_ready_cb");
     GError *error = NULL;
     // pipeline_descr = "videotestsrc ! fakesink";
     /* ! vah264enc bitrate=10000\
@@ -90,18 +91,18 @@ void on_pipewire_stream_ready_cb(int pipewire_fd) {
         exit(1);
     g_ctx.pipeline = gst_parse_launch(pipeline_str, &error);
     if (!g_ctx.pipeline) {
-        g_error("streamd: parse error: %s\n", error->message);
+        log_error("parse error: %s", error->message);
     }
     GstBus *bus = gst_element_get_bus(g_ctx.pipeline);
     if (!bus) {
-        g_error("streamd: bus error\n");
+        log_error("bus error");
     }
     gst_bus_add_watch(bus, (GstBusFunc)on_bus_message, g_ctx.loop);
     gst_object_unref(bus);
 
     GstElement *pipewiresrc = gst_bin_get_by_name(GST_BIN(g_ctx.pipeline), "pipewiresrc0");
     if (!pipewiresrc) {
-        g_error("streamd: pipeline error\n");
+        log_error("pipeline error");
     }
     GstPad *pad = gst_element_get_static_pad(pipewiresrc, "src");
     gst_pad_add_probe(pad, GST_PAD_PROBE_TYPE_EVENT_UPSTREAM, g_ctx.navi_capture->event_probe_cb, g_ctx.navi_capture,
@@ -110,7 +111,7 @@ void on_pipewire_stream_ready_cb(int pipewire_fd) {
     gst_element_set_state(g_ctx.pipeline, GST_STATE_PLAYING);
 
     if (gst_element_get_state(g_ctx.pipeline, NULL, NULL, -1) == GST_STATE_CHANGE_FAILURE) {
-        g_error("streamd: failed to go into PLAYING state");
+        log_error("failed to go into PLAYING state");
     }
     return;
 }
@@ -121,7 +122,7 @@ gint main(gint argc, gchar *argv[]) {
     // first we need to initialize navigation (mouse, keyboard) events handler
     // init_navi_capture() returns NaviCapture which we use later from the on_pipewire_stream_ready_cb()
     struct NaviCapture *n_capture;
-    if (!init_navi_capture(&n_capture)) g_error("streamd: navi events handler init error");
+    if (!init_navi_capture(&n_capture)) log_error("navi events handler init error");
     g_ctx.navi_capture = n_capture;
 
     // next we initialize pipewire screencast stream
@@ -132,11 +133,11 @@ gint main(gint argc, gchar *argv[]) {
     scp_capture->cursor_visible = true;
     scp_capture->restore_token = NULL;
     scp_capture->stream_ready_cb = on_pipewire_stream_ready_cb;
-    if (!init_screencast_capture(scp_capture)) g_error("streamd: screencast init error");
+    if (!init_screencast_capture(scp_capture)) log_error("screencast init error");
 
     gst_init(&argc, &argv);
     g_ctx.loop = g_main_loop_new(NULL, FALSE);
-    g_print("streamd: running...\n");
+    log_info("running...");
     g_main_loop_run(g_ctx.loop);
 
     bfree(scp_capture);

@@ -2,6 +2,7 @@
     "window.title": "${dirty}yag${separator}${rootName}",
     "editor.formatOnSave": true,
     "cmake.configureArgs": [
-        "-DVIDEO_ENC=\"cpu\""
+        "-DVIDEO_ENC=cpu",
+        "-DLOG_LEVEL=3"
     ]
 }

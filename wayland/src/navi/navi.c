@@ -6,6 +6,8 @@
 #include <unistd.h>
 #include <util/bmem.h>
 
+#include "../log.h"
+
 #include "keyboard.h"
 #include "pointer.h"
 #include "virtual-keyboard-unstable-v1-client-protocol.h"
@@ -32,19 +34,19 @@ char *getenv_or_default(char *name, char *dflt) {
 void *check_last_activity() {
     last_activity_time = time(NULL);
     float max_inactivity_period = atof(getenv_or_default("MAX_INACTIVITY_PERIOD", DEFAULT_MAX_INACTIVITY_PERIOD));
-    printf("streamd: max inactivity period: %f seconds\n", max_inactivity_period);
+    log_info("max inactivity period: %f seconds", max_inactivity_period);
     while (1) {
         sleep(CHECK_LAST_ACTIVITY_PERIOD);
         time_t current_time = time(NULL);
         float d = difftime(current_time, last_activity_time);
-        printf("streamd: checking for inactivity, last activity: %f seconds ago\n", d);
+        log_info("checking for inactivity, last activity: %f seconds ago", d);
         if (d > (max_inactivity_period + 2*CHECK_LAST_ACTIVITY_PERIOD)) {
             // probably container was resumed after a pause, resetting last_activity_time
             last_activity_time = time(NULL);
             d = 0;
         }
         if (d >= max_inactivity_period) {
-            printf("streamd: exiting due to inactivity\n");
+            log_info("exiting due to inactivity");
             exit(0);
         }
     }
@@ -157,14 +159,14 @@ gboolean init_navi_capture(struct NaviCapture **capture) {
     n_capture->seat = NULL;
     n_capture->display = wl_display_connect(getenv("WAYLAND_DISPLAY"));
     if (!n_capture->display) {
-        printf("wl_display_connect error");
+        log_error("wl_display_connect error");
         return false;
     }
     struct wl_registry *registry = wl_display_get_registry(n_capture->display);
     wl_registry_add_listener(registry, &registry_listener, n_capture);
     wl_display_roundtrip(n_capture->display);
     if (n_capture->pointer_manager == NULL || n_capture->keyboard_manager == NULL || n_capture->seat == NULL) {
-        printf("compositor does not support wlr-virtual-pointer-unstable-v1");
+        log_error("compositor does not support wlr-virtual-pointer-unstable-v1");
         return false;
     }
 
@@ -173,7 +175,7 @@ gboolean init_navi_capture(struct NaviCapture **capture) {
     n_capture->pointer.screen_height = atoi(getenv("SCREEN_HEIGHT"));
     n_capture->pointer.screen_width = atoi(getenv("SCREEN_WIDTH"));
     if (pointer_init(&n_capture->pointer) < 0) {
-        printf("pointer_init error");
+        log_error("pointer_init error");
         return false;
     }
 
@@ -187,14 +189,14 @@ gboolean init_navi_capture(struct NaviCapture **capture) {
         .options = "",
     };
     if (keyboard_init(&n_capture->keyboard, &rule_names) < 0) {
-        printf("keyboard_init error");
+        log_error("keyboard_init error");
         return false;
     }
     *capture = n_capture;
 
     pthread_t thread_id;
     if (pthread_create(&thread_id, NULL, &check_last_activity, NULL) != 0) {
-        printf("streamd: failed to create watchdog thread\n");
+        log_error("failed to create watchdog thread");
         return false;
     }
 

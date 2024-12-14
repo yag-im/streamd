@@ -7,6 +7,8 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include "./log.h"
+
 #define MOUSE_SCROLL_UP_BUTTON 4
 #define MOUSE_SCROLL_DOWN_BUTTON 5
 
@@ -32,19 +34,19 @@ char *getenv_or_default(char *name, char *dflt) {
 void *check_last_activity() {
     last_activity_time = time(NULL);
     float max_inactivity_period = atof(getenv_or_default("MAX_INACTIVITY_PERIOD", DEFAULT_MAX_INACTIVITY_PERIOD));
-    printf("streamd: max inactivity period: %f seconds\n", max_inactivity_period);
+    log_info("max inactivity period: %f seconds", max_inactivity_period);
     while (1) {
         sleep(CHECK_LAST_ACTIVITY_PERIOD);
         time_t current_time = time(NULL);
         float d = difftime(current_time, last_activity_time);
-        printf("streamd: checking for inactivity, last activity: %f seconds ago\n", d);
+        log_info("checking for inactivity, last activity: %f seconds ago", d);
         if (d > (max_inactivity_period + 2 * CHECK_LAST_ACTIVITY_PERIOD)) {
             // probably container was resumed after a pause, resetting last_activity_time
             last_activity_time = time(NULL);
             d = 0;
         }
         if (d >= max_inactivity_period) {
-            printf("streamd: exiting due to inactivity\n");
+            log_info("exiting due to inactivity");
             exit(0);
         }
     }
@@ -54,7 +56,7 @@ void *check_last_activity() {
 void gst_ximage_navigation_mouse_move_pointer(Display *display, int x, int y, Bool is_relative) {
     if (!is_relative) {
         // If screen_number is -1, the current screen (that the pointer is on) is used
-        // printf("streamd: XTestFakeMotionEvent: x: %d, y: %d\n", x, y);
+        // log_debug("XTestFakeMotionEvent: x: %d, y: %d", x, y);
         XTestFakeMotionEvent(display, -1, x, y, CurrentTime);
     } else {
         int dx = x;
@@ -66,7 +68,7 @@ void gst_ximage_navigation_mouse_move_pointer(Display *display, int x, int y, Bo
             dx = x - cur_mouse_pos_x;
             dy = y - cur_mouse_pos_y;
         }
-        // printf("streamd: XTestFakeRelativeMotionEvent: dx: %d, dy: %d\n", dx, dy);
+        // log_debug("XTestFakeRelativeMotionEvent: dx: %d, dy: %d", dx, dy);
         XTestFakeRelativeMotionEvent(display, dx, dy, CurrentTime);
         cur_mouse_pos_x = x;
         cur_mouse_pos_y = y;
@@ -98,6 +100,7 @@ void gst_ximage_navigation_key(Display *display, const char *keysym_name, Bool i
     unsigned int keysym, keycode;
     keysym = (unsigned int)XStringToKeysym(keysym_name);
     keycode = XKeysymToKeycode(display, keysym);
+    log_debug("keyboard event: keycode=%s state=%s", keycode, is_press ? "pressed" : "released");
     if (keycode == 0)  // undefined KeySym
         return;
     XTestFakeKeyEvent(display, keycode, is_press, CurrentTime);
@@ -167,21 +170,21 @@ gboolean init_navi_capture(struct NaviCapture **capture) {
     n_capture->event_probe_cb = x11_event_probe_cb;
     n_capture->display = XOpenDisplay(getenv("DISPLAY"));
     if (n_capture->display == NULL) {
-        printf("streamd: init_navi_capture error\n");
+        log_error("init_navi_capture error");
         return false;
     }
     *capture = n_capture;
 
     pthread_t thread_id;
     if (pthread_create(&thread_id, NULL, &check_last_activity, NULL) != 0) {
-        printf("streamd: failed to create watchdog thread\n");
+        log_error("failed to create watchdog thread");
         return false;
     }
 
     force_relative_mouse_moves =
         !strcmp(getenv_or_default("FORCE_RELATIVE_MOUSE_MOVES", DEFAULT_FORCE_RELATIVE_MOUSE_MOVES), "true");
     if (force_relative_mouse_moves) {
-        printf("streamd: forced relative mouse moves are enabled\n");
+        log_info("forced relative mouse moves are enabled");
     }
 
     return true;

@@ -365,7 +365,13 @@ RUN mkdir -p /usr/share/xdg-desktop-portal-wlr
 # keep in sync with jukebox/runners/base/wayland/files/xdg-desktop-portal-wlr.conf
 COPY artifacts/runtime/conf/xdg-desktop-portal-wlr.conf /usr/share/xdg-desktop-portal-wlr/config
 
-# TODO: sync-up with gstreamer build in jukebox (follow jukebox/runners/base/files/build_gstreamer.sh)
+# TODO: replace with gstreamer build in jukebox (follow jukebox/runners/base/files/build_gstreamer.sh)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        libgstreamer1.0-dev \
+        libgstreamer-plugins-base1.0-dev
+# correct paths as per jukebox
+RUN cp -r /usr/include/gstreamer-1.0/gst /usr/include/gst
 
 # COPY deps/gstreamer/subprojects/packages/bin /bin
 # COPY deps/gstreamer/subprojects/packages/include /include

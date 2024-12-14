@@ -11,6 +11,7 @@ pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0 gstreamer-base-1.0)
 
 set(
     SOURCE_FILES
+    log.c
     main.c
     navi.c
 )
@@ -19,6 +20,10 @@ add_executable(streamd ${SOURCE_FILES})
 
 if(VIDEO_ENC)
     target_compile_definitions(streamd PRIVATE "VIDEO_ENC=\"${VIDEO_ENC}\"")
+endif()
+
+if(LOG_LEVEL)
+    target_compile_definitions(streamd PRIVATE "LOG_LEVEL=${LOG_LEVEL}")
 endif()
 
 target_link_libraries(streamd ${GSTREAMER_LIBRARIES} gstvideo-1.0.so Xtst X11)

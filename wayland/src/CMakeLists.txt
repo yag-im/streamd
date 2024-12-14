@@ -29,6 +29,7 @@ include_directories(${CMAKE_SOURCE_DIR}/src/navi ${CMAKE_SOURCE_DIR}/wayland/src
 set(
     SOURCE_FILES
     main.c
+    log.c
     libobs/util/base.c
     libobs/util/bmem.c
     libobs/util/dstr.c
@@ -47,6 +48,10 @@ add_executable(streamd ${SOURCE_FILES})
 
 if(VIDEO_ENC)
     target_compile_definitions(streamd PRIVATE "VIDEO_ENC=\"${VIDEO_ENC}\"")
+endif()
+
+if(LOG_LEVEL)
+    target_compile_definitions(streamd PRIVATE "LOG_LEVEL=${LOG_LEVEL}")
 endif()
 
 target_link_libraries(streamd ${GSTREAMER_LIBRARIES} ${GIO_LIBRARIES} ${WAYLAND_LIBRARIES} ${XKB_LIBRARIES} gstvideo-1.0.so )

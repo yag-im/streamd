@@ -142,7 +142,7 @@ static void keyboard__dump_entry(const struct keyboard* self,
 	bool is_pressed MAYBE_UNUSED =
 		intset_is_set(&self->key_state, entry->code);
 
-	// printf("symbol=%s level=%d code=%s %s\n", sym_name, entry->level, code_name, is_pressed ? "pressed" : "released");
+	// log_debug("symbol=%s level=%d code=%s %s", sym_name, entry->level, code_name, is_pressed ? "pressed" : "released");
 }
 
 void keyboard_dump_lookup_table(const struct keyboard* self)
@@ -165,7 +165,7 @@ int keyboard_init(struct keyboard* self, const struct xkb_rule_names* rule_names
 		goto keymap_failure;
 
 	if (xkb_keymap_num_layouts(self->keymap) > 1)
-		printf("Multiple keyboard layouts have been specified, but only one is supported.\n");
+		log_warn("Multiple keyboard layouts have been specified, but only one is supported");
 
 	self->state = xkb_state_new(self->keymap);
 	if (!self->state)
@@ -366,7 +366,7 @@ static void send_key_with_level(struct keyboard* self, xkb_keycode_t code,
 			XKB_STATE_MODS_LATCHED, XKB_STATE_MODS_LOCKED);
 	keyboard_send_mods(self);
 
-	// printf("send key with level: old mods: %x, new mods: %x\n", save.latched | save.locked | save.depressed, mods);
+	// log_debug("send key with level: old mods: %x, new mods: %x", save.latched | save.locked | save.depressed, mods);
 
 	send_key(self, code, is_pressed);
 
@@ -394,7 +394,7 @@ void keyboard_feed(struct keyboard* self, xkb_keysym_t symbol, bool is_pressed)
 	struct table_entry* entry = keyboard_find_symbol(self, symbol);
 	if (!entry) {
 		char name[256];
-		// printf("Failed to look up keyboard symbol: %s\n", get_symbol_name(symbol, name, sizeof(name)));
+		// log_error("Failed to look up keyboard symbol: %s", get_symbol_name(symbol, name, sizeof(name)));
 		return;
 	}
 

@@ -36,16 +36,24 @@ static gboolean on_bus_message(GstBus *bus, GstMessage *message, GMainLoop *loop
 }
 
 gchar* compose_gstreamer_pipeline() {
+    // based on: https://github.com/selkies-project/selkies-gstreamer/blob/main/src/selkies_gstreamer/gstwebrtc_app.py
     gchar *pipeline_str = "\
         ximagesrc display-name=%s show-pointer=%s use-damage=false remote=true blocksize=16384\
-            ! video/x-raw,framerate=%s/1\
-            ! videoconvert";
+            ! video/x-raw,framerate=%s/1";
     if (VIDEO_ENC == "gpu-intel") {
         pipeline_str = g_strconcat(pipeline_str, "\
+            ! videoconvert\
             ! qsvh264enc bitrate=10000 low-latency=true target-usage=7", NULL);
-
+    } else if (VIDEO_ENC == "gpu-nvidia") {
+        pipeline_str = g_strconcat(pipeline_str, "\
+            ! cudaupload\
+            ! cudaconvert qos=true\
+            ! video/x-raw(memory:CUDAMemory),format=NV12\
+            ! nvcudah264enc name=nvenc bitrate=10000 rate-control=cbr gop-size=-1 strict-gop=true aud=false b-adapt=false rc-lookahead=0 b-frames=0 zero-reorder-delay=true cabac=true repeat-sequence-header=true preset=p4 tune=ultra-low-latency multi-pass=two-pass-quarter\
+            ! h264parse config-interval=-1", NULL);
     } else if (VIDEO_ENC == "cpu") {
         pipeline_str = g_strconcat(pipeline_str, "\
+            ! videoconvert\
             ! x264enc bitrate=10000 tune=zerolatency speed-preset=ultrafast threads=2 key-int-max=2560 b-adapt=false bframes=0 b-pyramid=false vbv-buf-capacity=120 pass=cbr", NULL);
     } else {
         log_error("unrecognized VIDEO_ENC: %s", VIDEO_ENC);
@@ -57,7 +65,7 @@ gchar* compose_gstreamer_pipeline() {
     // which are compatible with both chrome and firefox
     // baseline and main profile generate profile-level-ids which are not supported in Firefox in cpu and/or intel-gpu modes
     pipeline_str = g_strconcat(pipeline_str, "\
-            ! video/x-h264,profile=constrained-baseline \
+            ! video/x-h264,stream-format=byte-stream,profile=constrained-baseline \
             ! queue\
             ! wrs.\
         pulsesrc\

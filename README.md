@@ -1,6 +1,8 @@
 # streamd
 
-`streamd` is a WebRTC streaming daemon that runs within each Jukebox container, supporting both X11 (ximagesrc) and Wayland (pipewiresrc) for frame capture. It offers frame encoding using CPU, iGPU (Intel HD), and GPU (Nvidia). The `streamd` component is baked into each [Jukebox](https://github.com/yag-im/jukebox) image.
+`streamd` is a WebRTC streaming daemon that runs within each Jukebox container, supporting both X11 (ximagesrc) and 
+Wayland (pipewiresrc) for frame capture. It offers frame encoding using CPU, iGPU (Intel HD), and GPU (Nvidia). 
+The `streamd` component is baked into each [Jukebox](https://github.com/yag-im/jukebox) image.
 
 ## Build notes
 

@@ -99,7 +99,7 @@ void gst_ximage_navigation_key(Display *display, const char *keysym_name, Bool i
     // keysym_name: one of X11 keysym names defined in https://www.cl.cam.ac.uk/~mgk25/ucs/keysyms.txt
     unsigned int keysym, keycode;
     keysym = (unsigned int)XStringToKeysym(keysym_name);
-    keycode = XKeysymToKeycode(display, keysym);
+    keycode = XKeysymToKeycode(display, keysym); // get keycode in linux cmd: "xev | grep keycode"
     log_debug("keyboard event: keycode=%u state=%s", keycode, is_press ? "pressed" : "released");
     if (keycode == 0)  // undefined KeySym
         return;

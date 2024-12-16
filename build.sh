@@ -40,10 +40,6 @@ done
 BUILD_NUM_WORKERS=8
 BUILD_TYPE=Release
 
-apt-get install -y --no-install-recommends \
-    libgstreamer1.0-dev \
-    libgstreamer-plugins-base1.0-dev
-
 cd "$WINDOW_SYSTEM" \
     && cmake -E make_directory "build" \
     && cmake \

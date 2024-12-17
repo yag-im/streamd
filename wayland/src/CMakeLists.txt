@@ -55,5 +55,5 @@ if(LOG_LEVEL)
 endif()
 
 target_link_libraries(streamd ${GSTREAMER_LIBRARIES} ${GIO_LIBRARIES} ${WAYLAND_LIBRARIES} ${XKB_LIBRARIES} gstvideo-1.0.so )
-target_include_directories(streamd PUBLIC ${GSTREAMER_INCLUDE_DIRS} ${GIO_LIBRARY_DIRS} /include/gstreamer-1.0 libobs)
+target_include_directories(streamd PUBLIC ${GSTREAMER_INCLUDE_DIRS} ${GIO_LIBRARY_DIRS} libobs)
 target_compile_options(streamd PUBLIC ${GSTREAMER_CFLAGS_OTHER} ${GIO_CFLAGS_OTHER})

@@ -1,10 +1,10 @@
 {
-    "name": "yag-jukebox-streamd",
+    "name": "yag-streamd",
     "build": {
         "dockerfile": "Dockerfile"
     },
     "runArgs": [
-        "--name=yag-jukebox-streamd",
+        "--name=yag-streamd",
         "--network=host",
         "--env-file=.devcontainer/artifacts/runtime/.env",
         "--device=/dev/dri/renderD128",

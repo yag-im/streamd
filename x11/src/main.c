@@ -13,14 +13,14 @@ struct StreamDCtx {
 } g_ctx = {.loop = NULL, .pipeline = NULL, .navi_capture = NULL};
 
 static gboolean on_bus_message(GstBus *bus, GstMessage *message, GMainLoop *loop) {
+    GError *err;
+    gchar *debug_info;
     switch (GST_MESSAGE_TYPE(message)) {
         case GST_MESSAGE_EOS:
             log_info("finished playback");
             g_main_loop_quit(loop);
             break;
         case GST_MESSAGE_ERROR:
-            GError *err;
-            gchar *debug_info;
             gst_message_parse_error(message, &err, &debug_info);
             log_error("error received from element %s: %s", GST_OBJECT_NAME(message->src), err->message);
             log_error("debugging information: %s", debug_info ? debug_info : "none");

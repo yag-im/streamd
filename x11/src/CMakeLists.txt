@@ -27,5 +27,5 @@ if(LOG_LEVEL)
 endif()
 
 target_link_libraries(streamd ${GSTREAMER_LIBRARIES} gstvideo-1.0.so Xtst X11)
-target_include_directories(streamd PUBLIC ${GSTREAMER_INCLUDE_DIRS} /include/gstreamer-1.0)
+target_include_directories(streamd PUBLIC ${GSTREAMER_INCLUDE_DIRS})
 target_compile_options(streamd PUBLIC ${GSTREAMER_CFLAGS_OTHER})

@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(PkgConfig REQUIRED)
+find_package(Threads REQUIRED)
 pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0 gstreamer-base-1.0)
 
 set(
@@ -26,6 +27,6 @@ if(LOG_LEVEL)
     target_compile_definitions(streamd PRIVATE "LOG_LEVEL=${LOG_LEVEL}")
 endif()
 
-target_link_libraries(streamd ${GSTREAMER_LIBRARIES} gstvideo-1.0.so Xtst X11)
+target_link_libraries(streamd ${CMAKE_THREAD_LIBS_INIT} ${GSTREAMER_LIBRARIES} gstvideo-1.0.so Xtst X11)
 target_include_directories(streamd PUBLIC ${GSTREAMER_INCLUDE_DIRS})
 target_compile_options(streamd PUBLIC ${GSTREAMER_CFLAGS_OTHER})

@@ -39,10 +39,10 @@ gchar* compose_gstreamer_pipeline() {
     // based on: https://github.com/selkies-project/selkies-gstreamer/blob/main/src/selkies_gstreamer/gstwebrtc_app.py
     gchar *pipeline_str = "\
         ximagesrc display-name=%s show-pointer=%s use-damage=false remote=true blocksize=16384\
-            ! video/x-raw,framerate=%s/1";
+            ! video/x-raw,framerate=%s/1\
+            ! videoconvert";
     if (VIDEO_ENC == "gpu-intel") {
         pipeline_str = g_strconcat(pipeline_str, "\
-            ! videoconvert\
             ! qsvh264enc bitrate=10000 low-latency=true target-usage=7", NULL);
     } else if (VIDEO_ENC == "gpu-nvidia") {
         pipeline_str = g_strconcat(pipeline_str, "\
@@ -53,7 +53,6 @@ gchar* compose_gstreamer_pipeline() {
             ! h264parse config-interval=-1", NULL);
     } else if (VIDEO_ENC == "cpu") {
         pipeline_str = g_strconcat(pipeline_str, "\
-            ! videoconvert\
             ! x264enc bitrate=10000 tune=zerolatency speed-preset=ultrafast threads=2 key-int-max=2560 b-adapt=false bframes=0 b-pyramid=false vbv-buf-capacity=120 pass=cbr", NULL);
     } else {
         log_error("unrecognized VIDEO_ENC: %s", VIDEO_ENC);

@@ -46,10 +46,8 @@ gchar* compose_gstreamer_pipeline() {
             ! qsvh264enc bitrate=10000 low-latency=true target-usage=7", NULL);
     } else if (VIDEO_ENC == "gpu-nvidia") {
         pipeline_str = g_strconcat(pipeline_str, "\
-            ! cudaupload\
-            ! cudaconvert qos=true\
-            ! video/x-raw(memory:CUDAMemory),format=NV12\
-            ! nvcudah264enc name=nvenc bitrate=10000 rate-control=cbr gop-size=-1 strict-gop=true aud=false b-adapt=false rc-lookahead=0 b-frames=0 zero-reorder-delay=true cabac=true repeat-sequence-header=true preset=p4 tune=ultra-low-latency multi-pass=two-pass-quarter\
+            ! video/x-raw,format=NV12\
+            ! nvh264enc name=encoder preset=2 gop-size=25 spatial-aq=true temporal-aq=true bitrate=10000 vbv-buffer-size=10000 rc-mode=6\
             ! h264parse config-interval=-1", NULL);
     } else if (VIDEO_ENC == "cpu") {
         pipeline_str = g_strconcat(pipeline_str, "\

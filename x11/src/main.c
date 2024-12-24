@@ -65,8 +65,9 @@ gchar* compose_gstreamer_pipeline() {
     // for intel-gpu: na=fmtp:96 packetization-mode=1;profile-level-id=424028;level-asymmetry-allowed=1
     // which are compatible with both chrome and firefox
     // baseline and main profile generate profile-level-ids which are not supported in Firefox in cpu and/or intel-gpu modes
+    // do not add stream-format=byte-stream into the caps as it breaks nvidia pipeline (https://discourse.gstreamer.org/t/h264parse-never-receives-valid-picture-headers/3819)
     pipeline_str = g_strconcat(pipeline_str, "\
-            ! video/x-h264,stream-format=byte-stream,profile=constrained-baseline \
+            ! video/x-h264,profile=constrained-baseline \
             ! queue\
             ! wrs.\
         pulsesrc\

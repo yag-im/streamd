@@ -21,16 +21,17 @@ Env vars used at runtime
     DISPLAY (for X11)
     SHOW_POINTER (for X11)
     FPS
+    LOADING_PERIOD
     MAX_INACTIVITY_PERIOD
     SCREEN_WIDTH
     SCREEN_HEIGHT
     SIGNALER_URI
     SIGNALER_HOST (must be sent as a header for valid routing; can't be extracted from SIGNALER_URI as it may use IP address (e.g. in local setups only))
     SIGNALER_AUTH_TOKEN (secret)
-    STUN_URI
+    STUN_URI    
     WAYLAND_DISPLAY (for Wayland)
     WS_CONN_ID
-    WS_CONSUMER_ID    
+    WS_CONSUMER_ID
 
 ## Refs
 

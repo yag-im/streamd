@@ -15,6 +15,7 @@ set(
     log.c
     main.c
     navi.c
+    utils.c
 )
 
 add_executable(streamd ${SOURCE_FILES})

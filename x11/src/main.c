@@ -1,10 +1,9 @@
+#include <gst/gst.h>
 #include <stdio.h>
 
-#include <gst/gst.h>
-
-#include "./log.h"
-
-#include "./navi.h"
+#include "log.h"
+#include "navi.h"
+#include "utils.h"
 
 struct StreamDCtx {
     GMainLoop *loop;
@@ -35,27 +34,32 @@ static gboolean on_bus_message(GstBus *bus, GstMessage *message, GMainLoop *loop
     return TRUE;
 }
 
-gchar* compose_gstreamer_pipeline() {
+gchar *compose_gstreamer_pipeline() {
     // based on: https://github.com/selkies-project/selkies-gstreamer/blob/main/src/selkies_gstreamer/gstwebrtc_app.py
-    gchar *pipeline_str = "\
+    gchar *pipeline_str =
+        "\
         ximagesrc display-name=%s show-pointer=%s use-damage=false remote=true blocksize=16384\
             ! video/x-raw,framerate=%s/1\
-            ! videoconvert";
+            ! videoconvert\
+            ! textoverlay name=overlay valignment=center halignment=center font-desc=\"Sans, 16\"";
     if (VIDEO_ENC == "gpu-intel") {
-        pipeline_str = g_strconcat(pipeline_str, "\
-            ! qsvh264enc bitrate=10000 low-latency=true target-usage=7", 
-            NULL);
+        pipeline_str = g_strconcat(pipeline_str,
+                                   "\
+            ! qsvh264enc bitrate=10000 low-latency=true target-usage=7",
+                                   NULL);
     } else if (VIDEO_ENC == "gpu-nvidia") {
-        pipeline_str = g_strconcat(pipeline_str, "\
+        pipeline_str = g_strconcat(pipeline_str,
+                                   "\
             ! cudaupload\
             ! cudaconvert qos=true\
             ! video/x-raw(memory:CUDAMemory),format=NV12\
-            ! nvcudah264enc name=nvenc bitrate=10000 rate-control=cbr gop-size=-1 strict-gop=true aud=false b-adapt=false rc-lookahead=0 b-frames=0 zero-reorder-delay=true cabac=true repeat-sequence-header=true preset=p4 tune=ultra-low-latency multi-pass=two-pass-quarter", 
-            NULL);
+            ! nvcudah264enc name=nvenc bitrate=10000 rate-control=cbr gop-size=-1 strict-gop=true aud=false b-adapt=false rc-lookahead=0 b-frames=0 zero-reorder-delay=true cabac=true repeat-sequence-header=true preset=p4 tune=ultra-low-latency multi-pass=two-pass-quarter",
+                                   NULL);
     } else if (VIDEO_ENC == "cpu") {
-        pipeline_str = g_strconcat(pipeline_str, "\
-            ! x264enc bitrate=10000 tune=zerolatency speed-preset=ultrafast threads=2 key-int-max=2560 b-adapt=false bframes=0 b-pyramid=false vbv-buf-capacity=120 pass=cbr", 
-            NULL);
+        pipeline_str = g_strconcat(pipeline_str,
+                                   "\
+            ! x264enc bitrate=10000 tune=zerolatency speed-preset=ultrafast threads=2 key-int-max=2560 b-adapt=false bframes=0 b-pyramid=false vbv-buf-capacity=120 pass=cbr",
+                                   NULL);
     } else {
         log_error("unrecognized VIDEO_ENC: %s", VIDEO_ENC);
         return NULL;
@@ -64,9 +68,11 @@ gchar* compose_gstreamer_pipeline() {
     // for cpu: na=fmtp:96 packetization-mode=1;profile-level-id=42c01f;level-asymmetry-allowed=1
     // for intel-gpu: na=fmtp:96 packetization-mode=1;profile-level-id=424028;level-asymmetry-allowed=1
     // which are compatible with both chrome and firefox
-    // baseline and main profile generate profile-level-ids which are not supported in Firefox in cpu and/or intel-gpu modes
-    // do not add stream-format=byte-stream into the caps as it breaks nvidia pipeline (https://discourse.gstreamer.org/t/h264parse-never-receives-valid-picture-headers/3819)
-    pipeline_str = g_strconcat(pipeline_str, "\
+    // baseline and main profile generate profile-level-ids which are not supported in Firefox in cpu and/or intel-gpu
+    // modes do not add stream-format=byte-stream into the caps as it breaks nvidia pipeline
+    // (https://discourse.gstreamer.org/t/h264parse-never-receives-valid-picture-headers/3819)
+    pipeline_str = g_strconcat(pipeline_str,
+                               "\
             ! video/x-h264,profile=constrained-baseline \
             ! queue\
             ! wrs.\
@@ -82,27 +88,18 @@ gchar* compose_gstreamer_pipeline() {
             signaller::insecure-tls=true\
             signaller::uri=\"%s\"\
             signaller::role=\"Producer\"\
-            signaller::headers=\"headers,host=%s,cookie=\\\"sigsvc_wsconnid=%s; sigsvc_authtoken=%s\\\"\"", NULL);
-    return g_strdup_printf(
-        pipeline_str, 
-        getenv("DISPLAY"),
-        getenv("SHOW_POINTER"),
-        getenv("FPS"),
-        getenv("WS_CONSUMER_ID"),
-        getenv("STUN_URI"),
-        getenv("SIGNALER_URI"),
-        getenv("SIGNALER_HOST"),
-        getenv("WS_CONN_ID"),
-        getenv("SIGNALER_AUTH_TOKEN")
-    );
+            signaller::headers=\"headers,host=%s,cookie=\\\"sigsvc_wsconnid=%s; sigsvc_authtoken=%s\\\"\"",
+                               NULL);
+    return g_strdup_printf(pipeline_str, getenv("DISPLAY"), getenv("SHOW_POINTER"), getenv("FPS"),
+                           getenv("WS_CONSUMER_ID"), getenv("STUN_URI"), getenv("SIGNALER_URI"),
+                           getenv("SIGNALER_HOST"), getenv("WS_CONN_ID"), getenv("SIGNALER_AUTH_TOKEN"));
 }
 
 void play_stream() {
     log_info("play_stream");
     GError *error = NULL;
     gchar *pipeline_str = compose_gstreamer_pipeline();
-    if (!pipeline_str)
-        exit(1);
+    if (!pipeline_str) exit(1);
     log_info("pipeline: %s", pipeline_str);
     g_ctx.pipeline = gst_parse_launch(pipeline_str, &error);
     if (!g_ctx.pipeline) {
@@ -123,6 +120,14 @@ void play_stream() {
     gst_pad_add_probe(pad, GST_PAD_PROBE_TYPE_EVENT_UPSTREAM, g_ctx.navi_capture->event_probe_cb, g_ctx.navi_capture,
                       NULL);
 
+    GstElement *overlay = gst_bin_get_by_name(GST_BIN(g_ctx.pipeline), "overlay");
+    if (!overlay) {
+        log_error("Failed to get textoverlay element.\n");
+    }
+    CountdownArgs args = {.overlay = overlay, .seconds = atol(getenv("LOADING_PERIOD"))};
+    pthread_t tid;
+    pthread_create(&tid, NULL, countdown_overlay_thread, &args);
+
     gst_element_set_state(g_ctx.pipeline, GST_STATE_PLAYING);
 
     if (gst_element_get_state(g_ctx.pipeline, NULL, NULL, -1) == GST_STATE_CHANGE_FAILURE) {
@@ -137,8 +142,7 @@ gint main(gint argc, gchar *argv[]) {
     // first we need to initialize navigation (mouse, keyboard) events handler
     // init_navi_capture() returns NaviCapture which we store and use later from the play_stream()
     struct NaviCapture *n_capture;
-    if (!init_navi_capture(&n_capture))
-        log_error("navi events handler init error");
+    if (!init_navi_capture(&n_capture)) log_error("navi events handler init error");
     g_ctx.navi_capture = n_capture;
 
     gst_init(&argc, &argv);

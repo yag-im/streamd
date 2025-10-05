@@ -4,6 +4,7 @@
 
 #include "./navi/navi.h"
 #include "./portal/screencast-portal.h"
+#include "utils.h"
 
 struct StreamDCtx {
     GMainLoop *loop;
@@ -34,23 +35,30 @@ static gboolean on_bus_message(GstBus *bus, GstMessage *message, GMainLoop *loop
     return TRUE;
 }
 
-gchar* compose_gstreamer_pipeline(int pipewire_fd) {
-    gchar *pipeline_str = "\
+gchar *compose_gstreamer_pipeline(int pipewire_fd) {
+    gchar *pipeline_str =
+        "\
         pipewiresrc fd=%u\
             ! videoconvert\
             ! video/x-raw,format=NV12,framerate=0/1,max-framerate=%s/1";
     if (VIDEO_ENC == "gpu-intel") {
-        pipeline_str = g_strconcat(pipeline_str, "\
-            ! qsvh264enc bitrate=10000 low-latency=true target-usage=7", NULL);
+        pipeline_str = g_strconcat(pipeline_str,
+                                   "\
+            ! qsvh264enc bitrate=10000 low-latency=true target-usage=7",
+                                   NULL);
 
     } else if (VIDEO_ENC == "cpu") {
-        pipeline_str = g_strconcat(pipeline_str, "\
-            ! x264enc bitrate=10000 tune=zerolatency speed-preset=ultrafast threads=2 key-int-max=2560 b-adapt=false bframes=0 b-pyramid=false vbv-buf-capacity=120 pass=cbr", NULL);
+        pipeline_str = g_strconcat(pipeline_str,
+                                   "\
+            ! x264enc bitrate=10000 tune=zerolatency speed-preset=ultrafast threads=2 key-int-max=2560 b-adapt=false bframes=0 b-pyramid=false vbv-buf-capacity=120 pass=cbr",
+                                   NULL);
     } else {
         return NULL;
     }
-    pipeline_str = g_strconcat(pipeline_str, "\
-            ! video/x-h264,profile=baseline \
+    pipeline_str = g_strconcat(pipeline_str,
+                               "\
+            ! video/x-h264,profile=baseline\
+            ! textoverlay name=overlay valignment=center halignment=center font-desc=\"Sans, 16\"\
             ! queue\
             ! wrs.\
         pulsesrc\
@@ -65,18 +73,11 @@ gchar* compose_gstreamer_pipeline(int pipewire_fd) {
             signaller::insecure-tls=true\
             signaller::uri=\"%s\"\
             signaller::role=\"Producer\"\
-            signaller::headers=\"headers,host=%s,cookie=\\\"sigsvc_wsconnid=%s; sigsvc_authtoken=%s\\\"\"", NULL);
-    return g_strdup_printf(
-        pipeline_str, 
-        pipewire_fd, 
-        getenv("FPS"), 
-        getenv("WS_CONSUMER_ID"),
-        getenv("STUN_URI"),
-        getenv("SIGNALER_URI"),
-        getenv("SIGNALER_HOST"),
-        getenv("WS_CONN_ID"),
-        getenv("SIGNALER_AUTH_TOKEN")
-    );
+            signaller::headers=\"headers,host=%s,cookie=\\\"sigsvc_wsconnid=%s; sigsvc_authtoken=%s\\\"\"",
+                               NULL);
+    return g_strdup_printf(pipeline_str, pipewire_fd, getenv("FPS"), getenv("WS_CONSUMER_ID"), getenv("STUN_URI"),
+                           getenv("SIGNALER_URI"), getenv("SIGNALER_HOST"), getenv("WS_CONN_ID"),
+                           getenv("SIGNALER_AUTH_TOKEN"));
 }
 
 void on_pipewire_stream_ready_cb(int pipewire_fd) {
@@ -87,8 +88,7 @@ void on_pipewire_stream_ready_cb(int pipewire_fd) {
        ! video/x-h264,profile=baseline\
     */
     gchar *pipeline_str = compose_gstreamer_pipeline(pipewire_fd);
-    if (!pipeline_str)
-        exit(1);
+    if (!pipeline_str) exit(1);
     g_ctx.pipeline = gst_parse_launch(pipeline_str, &error);
     if (!g_ctx.pipeline) {
         log_error("parse error: %s", error->message);
@@ -107,6 +107,14 @@ void on_pipewire_stream_ready_cb(int pipewire_fd) {
     GstPad *pad = gst_element_get_static_pad(pipewiresrc, "src");
     gst_pad_add_probe(pad, GST_PAD_PROBE_TYPE_EVENT_UPSTREAM, g_ctx.navi_capture->event_probe_cb, g_ctx.navi_capture,
                       NULL);
+    
+    GstElement *overlay = gst_bin_get_by_name(GST_BIN(g_ctx.pipeline), "overlay");
+    if (!overlay) {
+        log_error("Failed to get textoverlay element.\n");
+    }
+    CountdownArgs args = {.overlay = overlay, .seconds = 5};
+    pthread_t tid;
+    pthread_create(&tid, NULL, countdown_overlay_thread, &args);
 
     gst_element_set_state(g_ctx.pipeline, GST_STATE_PLAYING);
 

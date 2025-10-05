@@ -7,51 +7,19 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#include "./log.h"
+#include "log.h"
+#include "utils.h"
 
 #define MOUSE_SCROLL_UP_BUTTON 4
 #define MOUSE_SCROLL_DOWN_BUTTON 5
 
-#define CHECK_LAST_ACTIVITY_PERIOD 60
-#define DEFAULT_MAX_INACTIVITY_PERIOD "3600"
 #define DEFAULT_FORCE_RELATIVE_MOUSE_MOVES "false"
 
 // Based on xtestlib: https://www.x.org/releases/X11R7.5/doc/Xext/xtestlib.html
 
-time_t last_activity_time;
 int cur_mouse_pos_x = -1;
 int cur_mouse_pos_y = -1;
 bool force_relative_mouse_moves = false;
-
-char *getenv_or_default(char *name, char *dflt) {
-    char *val = getenv(name);
-    if (val) {
-        return val;
-    }
-    return dflt;
-}
-
-void *check_last_activity() {
-    last_activity_time = time(NULL);
-    float max_inactivity_period = atof(getenv_or_default("MAX_INACTIVITY_PERIOD", DEFAULT_MAX_INACTIVITY_PERIOD));
-    log_info("max inactivity period: %f seconds", max_inactivity_period);
-    while (1) {
-        sleep(CHECK_LAST_ACTIVITY_PERIOD);
-        time_t current_time = time(NULL);
-        float d = difftime(current_time, last_activity_time);
-        log_info("checking for inactivity, last activity: %f seconds ago", d);
-        if (d > (max_inactivity_period + 2 * CHECK_LAST_ACTIVITY_PERIOD)) {
-            // probably container was resumed after a pause, resetting last_activity_time
-            last_activity_time = time(NULL);
-            d = 0;
-        }
-        if (d >= max_inactivity_period) {
-            log_info("exiting due to inactivity");
-            exit(0);
-        }
-    }
-    return NULL;
-}
 
 void gst_ximage_navigation_mouse_move_pointer(Display *display, int x, int y, Bool is_relative) {
     if (!is_relative) {
@@ -99,7 +67,7 @@ void gst_ximage_navigation_key(Display *display, const char *keysym_name, Bool i
     // keysym_name: one of X11 keysym names defined in https://www.cl.cam.ac.uk/~mgk25/ucs/keysyms.txt
     unsigned int keysym, keycode;
     keysym = (unsigned int)XStringToKeysym(keysym_name);
-    keycode = XKeysymToKeycode(display, keysym); // get keycode in linux cmd: "xev | grep keycode"
+    keycode = XKeysymToKeycode(display, keysym);  // get keycode in linux cmd: "xev | grep keycode"
     log_debug("keyboard event: keycode=%u state=%s", keycode, is_press ? "pressed" : "released");
     if (keycode == 0)  // undefined KeySym
         return;
@@ -175,8 +143,8 @@ gboolean init_navi_capture(struct NaviCapture **capture) {
     }
     *capture = n_capture;
 
-    pthread_t thread_id;
-    if (pthread_create(&thread_id, NULL, &check_last_activity, NULL) != 0) {
+    pthread_t tid;
+    if (pthread_create(&tid, NULL, &check_last_activity, NULL) != 0) {
         log_error("failed to create watchdog thread");
         return false;
     }

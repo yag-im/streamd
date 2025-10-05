@@ -124,7 +124,7 @@ void play_stream() {
     if (!overlay) {
         log_error("Failed to get textoverlay element.\n");
     }
-    CountdownArgs args = {.overlay = overlay, .seconds = atol(getenv("LOADING_PERIOD"))};
+    CountdownArgs args = {.overlay = overlay, .seconds = atol(getenv("LOADING_DURATION"))};
     pthread_t tid;
     pthread_create(&tid, NULL, countdown_overlay_thread, &args);
 

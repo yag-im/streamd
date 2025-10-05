@@ -4,8 +4,8 @@
 #include <gst/gst.h>
 #include <unistd.h>
 
-#define CHECK_LAST_ACTIVITY_PERIOD 60
-#define DEFAULT_MAX_INACTIVITY_PERIOD "3600"
+#define CHECK_LAST_ACTIVITY_INTERVAL 60
+#define DEFAULT_MAX_INACTIVITY_DURATION "3600"
 
 extern time_t last_activity_time;
 

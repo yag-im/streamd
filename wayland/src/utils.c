@@ -16,19 +16,19 @@ time_t last_activity_time;
 
 void *check_last_activity() {
     last_activity_time = time(NULL);
-    float max_inactivity_period = atof(getenv_or_default("MAX_INACTIVITY_PERIOD", DEFAULT_MAX_INACTIVITY_PERIOD));
-    log_info("max inactivity period: %f seconds", max_inactivity_period);
+    float max_inactivity_duration = atof(getenv_or_default("MAX_INACTIVITY_DURATION", DEFAULT_MAX_INACTIVITY_DURATION));
+    log_info("max inactivity period: %f seconds", max_inactivity_duration);
     while (1) {
-        sleep(CHECK_LAST_ACTIVITY_PERIOD);
+        sleep(CHECK_LAST_ACTIVITY_INTERVAL);
         time_t current_time = time(NULL);
         float d = difftime(current_time, last_activity_time);
         log_info("checking for inactivity, last activity: %f seconds ago", d);
-        if (d > (max_inactivity_period + 2 * CHECK_LAST_ACTIVITY_PERIOD)) {
+        if (d > (max_inactivity_duration + 2 * CHECK_LAST_ACTIVITY_INTERVAL)) {
             // probably container was resumed after a pause, resetting last_activity_time
             last_activity_time = time(NULL);
             d = 0;
         }
-        if (d >= max_inactivity_period) {
+        if (d >= max_inactivity_duration) {
             log_info("exiting due to inactivity");
             exit(0);
         }

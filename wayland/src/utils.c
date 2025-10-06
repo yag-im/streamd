@@ -42,7 +42,7 @@ void *countdown_overlay_thread(void *data) {
     int seconds = args->seconds;
     char text[128];
     for (int i = seconds; i > 0; --i) {
-        snprintf(text, sizeof(text), "Please wait, loading... %d", i);
+        snprintf(text, sizeof(text), "Loading. Please wait... %d", i);
         g_object_set(overlay, "text", text, NULL);
         sleep(1);
     }

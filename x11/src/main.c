@@ -53,7 +53,7 @@ gchar *compose_gstreamer_pipeline() {
             ! cudaupload\
             ! cudaconvert qos=true\
             ! video/x-raw(memory:CUDAMemory),format=NV12\
-            ! nvh264enc name=nvenc bitrate=10000 rc-mode=cbr gop-size=-1 strict-gop=true aud=false b-adapt=false rc-lookahead=0 bframes=0 cabac=true repeat-sequence-header=true preset=p4 tune=ultra-low-latency multipass=two-pass-quarter",
+            ! nvh264enc name=nvenc bitrate=10000 rc-mode=cbr gop-size=-1 strict-gop=true aud=false b-adapt=false rc-lookahead=0 bframes=0 cabac=true repeat-sequence-header=true preset=p4 tune=ultra-low-latency multi-pass=two-pass-quarter",
                                    NULL);
     } else if (VIDEO_ENC == "cpu") {
         pipeline_str = g_strconcat(pipeline_str,
